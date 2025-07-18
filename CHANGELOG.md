@@ -1,5 +1,16 @@
 ## 1.0.0 (2025-07-18)
 
+### Bug Fixes
+
+* **config:** ssl error ([201443c](https://github.com/fouadkhalied/ddd-nestjs-devops/commit/201443c4a0d4f523daa9ac67295fb406b7e09de2))
+* **migration:** already exsits error ([2267568](https://github.com/fouadkhalied/ddd-nestjs-devops/commit/2267568acc7e077d2ed64fa0362a9c035749d2f1))
+
+### General maintenance
+
+* initial commit ([8000713](https://github.com/fouadkhalied/ddd-nestjs-devops/commit/80007130c444b4221e1dd0b5b4a55a5983e6e006))
+
+## 1.0.0 (2025-07-18)
+
 ### ⚠ BREAKING CHANGES
 
 * **release:** [skip ci] 1.3.0 released
