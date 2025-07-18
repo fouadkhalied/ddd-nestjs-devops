@@ -17,9 +17,9 @@ export default defineConfig({
   },
   driverOptions: {
     connection: {
-      ssl: {
-        rejectUnauthorized: false, // for self-signed certs; change to `true` in production with valid cert
-      },
+      ssl: process.env.NODE_ENV === 'production' ? {
+        rejectUnauthorized: false,
+      } : false,
     },
   },
 });
