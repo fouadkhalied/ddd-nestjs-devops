@@ -14,6 +14,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { CommunicationModule } from './modules/communication/communication.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { PropertiesModule } from './modules/properties/properties.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
     HealthModule,
     UserModule,
     AuthModule,
+    PropertiesModule,
     CommunicationModule,
   ],
   controllers: [],
