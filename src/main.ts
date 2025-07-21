@@ -8,7 +8,6 @@ import { join } from 'path';
 import {
   BadRequestException,
   ValidationPipe,
-  VersioningType,
 } from '@nestjs/common';
 import { HttpExceptionFilter } from './libs/exceptions/exception.filter';
 
@@ -17,10 +16,10 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter(),
   );
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-  });
+  // app.enableVersioning({
+  //   type: VersioningType.URI,
+  //   defaultVersion: '1',
+  // });
   app.enableShutdownHooks();
   app.enableCors();
   app.useStaticAssets({
