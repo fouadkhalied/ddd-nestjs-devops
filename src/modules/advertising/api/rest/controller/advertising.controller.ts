@@ -31,7 +31,7 @@ import { RejectAdCommand } from '../../../application/command/reject-ad.command'
 import { DeleteAdCommand } from '../../../application/command/delete-ad.command';
 import { GetAdByIdQuery } from '../../../application/query/get-ad-by-id.query';
 import { GetAllAdsQuery } from '../../../application/query/get-all-ads.query';
-import { GetApprovedAdsQuery } from "../../../application/query/get-ads-for-feed.query";
+import { GetApprovedAdsQuery } from '../../../application/query/get-ads-for-feed.query';
 import { AdDto, toAdDto } from '../presentation/dto/ad.dto';
 import { AdParams } from '../presentation/params/ad.params';
 import {
@@ -41,7 +41,10 @@ import {
 import { Collection } from '../../../../../libs/api/rest/collection.interface';
 import { Ad } from '../../../domain/entity/ad.entity';
 import { AdFilterParams } from '../presentation/params/ad-filter.params';
-import { allKsaCities, KSACities } from 'src/modules/advertising/domain/value-object/ksa-cities.enum';
+import {
+  allKsaCities,
+  KSACities,
+} from 'src/modules/advertising/domain/value-object/ksa-cities.enum';
 
 interface AuthRequest extends FastifyRequest {
   user?: {
@@ -128,41 +131,41 @@ export class AdvertisingController {
     );
   }
 
-@Get('/listApprovedAdsForUser')
-@PublicApi()
-async getAdsForFeed(
-  @Query() params: AdFilterParams,
-): Promise<PaginatedResponse<any>> {
+  @Get('/listApprovedAdsForUser')
+  @PublicApi()
+  async getAdsForFeed(
+    @Query() params: AdFilterParams,
+  ): Promise<PaginatedResponse<any>> {
+    const validCities: KSACities[] = [];
 
-  const validCities: KSACities[] = [];
+    if (params.targetCities) {
+      const cities = Array.isArray(params.targetCities)
+        ? params.targetCities
+        : [params.targetCities];
 
-if (params.targetCities) {
-  const cities = Array.isArray(params.targetCities)
-    ? params.targetCities
-    : [params.targetCities];
-
-  for (const city of cities) {
-    if (!allKsaCities.includes(city as KSACities)) {
-      throw new Error(`❌ Invalid city: ${city}. Must be one of ${allKsaCities.join(', ')}`);
+      for (const city of cities) {
+        if (!allKsaCities.includes(city as KSACities)) {
+          throw new Error(
+            `❌ Invalid city: ${city}. Must be one of ${allKsaCities.join(', ')}`,
+          );
+        }
+        validCities.push(city as KSACities);
+      }
     }
-    validCities.push(city as KSACities);
+
+    const ads: Collection<Ad> = await this.queryBus.execute(
+      new GetApprovedAdsQuery(params, validCities, params.titleEn),
+    );
+
+    return toPaginatedResponse(
+      {
+        items: ads.items.map(toAdDto),
+        total: ads.total,
+      },
+      1,
+      10,
+    );
   }
-}
-
-  const ads: Collection<Ad> = await this.queryBus.execute(
-    new GetApprovedAdsQuery(params, validCities, params.titleEn),
-  );
-
-  return toPaginatedResponse(
-    {
-      items: ads.items.map(toAdDto),
-      total: ads.total,
-    },
-    1,
-    10,
-  );
-}
-
 
   @HttpCode(HttpStatus.OK)
   @AuthRoles(ApiRole.ADMIN)
@@ -185,10 +188,7 @@ if (params.targetCities) {
   @Post(':id/activate')
   async activateAd(@Param('id') id: string): Promise<AdDto> {
     return getOrThrowWith(
-      map(
-        await this.commandBus.execute(new ActivateAdCommand(id)),
-        toAdDto,
-      ),
+      map(await this.commandBus.execute(new ActivateAdCommand(id)), toAdDto),
       () => new NotFoundException(`Failed to activate ad with id ${id}`),
     );
   }
@@ -261,5 +261,4 @@ if (params.targetCities) {
   async deleteAd(@Param('id') id: string): Promise<void> {
     await this.commandBus.execute(new DeleteAdCommand(id));
   }
-  
 }

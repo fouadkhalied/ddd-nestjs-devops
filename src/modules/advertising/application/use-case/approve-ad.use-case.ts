@@ -1,4 +1,3 @@
-
 import { Injectable, Inject } from '@nestjs/common';
 import { EventPublisher } from '@nestjs/cqrs';
 import { isNone, Option } from 'effect/Option';
@@ -35,7 +34,7 @@ export class ApproveAdUseCase implements UseCase<ApproveAdInput, Option<Ad>> {
     }
 
     this.eventPublisher.mergeObjectContext(ad.value);
-    
+
     ad.value.approve(input.socialMediaLinks);
 
     const updated = await this.advertisingRepository.updateAd(

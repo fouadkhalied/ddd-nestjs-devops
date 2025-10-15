@@ -31,7 +31,6 @@ export enum KSACities {
   AL_QUNFUDHAH = 'al_qunfudhah',
 }
 
-
 export const allKsaCities = [
   'riyadh',
   'jeddah',

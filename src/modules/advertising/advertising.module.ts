@@ -23,7 +23,7 @@ import { DeleteAdHandler } from './application/handler/command/delete-ad.handler
 import { GetAdByIdHandler } from './application/handler/query/get-ad-by-id.handler';
 import { GetAllAdsHandler } from './application/handler/query/get-all-ads.handler';
 import { GetAdsByTitleHandler } from './application/handler/query/get-ads-by-title.handler';
-import { GetApprovedAdsHandler } from "./application/handler/query/get-ads-for-feed.handler";
+import { GetApprovedAdsHandler } from './application/handler/query/get-ads-for-feed.handler';
 
 const CommandHandlers = [
   CreateAdHandler,
@@ -40,7 +40,7 @@ const QueryHandlers = [
   GetAdByIdHandler,
   GetAllAdsHandler,
   GetAdsByTitleHandler,
-  GetApprovedAdsHandler
+  GetApprovedAdsHandler,
 ];
 
 @Module({

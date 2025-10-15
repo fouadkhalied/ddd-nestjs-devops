@@ -17,7 +17,7 @@ export default defineConfig({
   },
   driverOptions: {
     connection: {
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
     },
   },
 });

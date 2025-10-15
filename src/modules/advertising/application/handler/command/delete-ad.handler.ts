@@ -1,4 +1,3 @@
-
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject, NotFoundException } from '@nestjs/common';
 import { DeleteAdCommand } from '../../command/delete-ad.command';

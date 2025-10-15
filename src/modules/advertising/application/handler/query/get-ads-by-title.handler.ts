@@ -16,10 +16,12 @@ export class GetAdsByTitleHandler implements IQueryHandler<GetAdsByTitleQuery> {
   async execute(query: GetAdsByTitleQuery): Promise<Collection<Ad>> {
     return await this.advertisingRepository.findAdsByTitle(
       query.title,
-      query.params ? {
-        offset: query.params.offset ?? 0,
-        limit: query.params.limit ?? 10,
-      } : { offset: 0, limit: 10 },
+      query.params
+        ? {
+            offset: query.params.offset ?? 0,
+            limit: query.params.limit ?? 10,
+          }
+        : { offset: 0, limit: 10 },
     );
   }
 }

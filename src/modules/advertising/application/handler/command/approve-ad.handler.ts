@@ -3,7 +3,10 @@ import { Inject, NotFoundException } from '@nestjs/common';
 import { Option, isNone } from 'effect/Option';
 import { ApproveAdCommand } from '../../command/approve-ad.command';
 import { AdvertisingRepository } from '../../../domain/repository/advertising.repository.interface';
-import { ADVERTISING_REPOSITORY, APPROVE_AD_USE_CASE } from '../../../advertising.tokens';
+import {
+  ADVERTISING_REPOSITORY,
+  APPROVE_AD_USE_CASE,
+} from '../../../advertising.tokens';
 import { Ad } from '../../../domain/entity/ad.entity';
 
 @CommandHandler(ApproveAdCommand)

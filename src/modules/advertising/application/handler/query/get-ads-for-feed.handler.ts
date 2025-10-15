@@ -5,7 +5,9 @@ import { AdvertisingRepository } from '../../../domain/repository/advertising.re
 import { GetApprovedAdsQuery } from '../../query/get-ads-for-feed.query';
 
 @QueryHandler(GetApprovedAdsQuery)
-export class GetApprovedAdsHandler implements IQueryHandler<GetApprovedAdsQuery> {
+export class GetApprovedAdsHandler
+  implements IQueryHandler<GetApprovedAdsQuery>
+{
   constructor(
     @Inject(ADVERTISING_REPOSITORY)
     private readonly repo: AdvertisingRepository,

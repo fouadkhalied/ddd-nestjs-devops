@@ -14,7 +14,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { CommunicationModule } from './modules/communication/communication.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { AdvertisingModule } from './modules/advertising/advertising.module'; 
+import { AdvertisingModule } from './modules/advertising/advertising.module';
 import { appConfig } from './libs/config/app.config';
 
 @Module({
