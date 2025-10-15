@@ -34,7 +34,7 @@ export class AssignCreditUseCase
       throw new BadRequestException('Insufficient balance');
     }
 
-    // Calculate impressions
+    // Calculate impressions based on credit
     const totalImpressions = input.credit * this.IMPRESSIONS_PER_SAR;
 
     // Execute transaction

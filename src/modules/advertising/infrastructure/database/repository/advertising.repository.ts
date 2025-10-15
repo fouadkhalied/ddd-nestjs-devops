@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { fromNullable, map, none, some, Option } from 'effect/Option';
-import { and, eq, gt, inArray, like, or, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, like, or, SQL, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-import { db } from 'src/libs/database/db.connection';
-import { ads, users } from 'src/libs/database/drizzle.schema';
 import { AdvertisingRepository } from '../../../domain/repository/advertising.repository.interface';
 import { Ad, AdProps } from '../../../domain/entity/ad.entity';
 import { AdMapper } from '../mapper/ad.mapper';
 import { AdStatus } from '../../../domain/value-object/ad-status.enum';
-import { KSACities } from '../../../domain/value-object/ksa-cities.enum';
 import { Collection } from 'src/libs/api/rest/collection.interface';
 import { PaginatedQueryParams } from 'src/libs/api/rest/paginated-query-params.dto';
+import { db } from 'src/libs/database/db.connection';
+import { ads, users } from 'src/libs/database/drizzle.schema';
+import { KSACities } from 'src/modules/advertising/domain/value-object/ksa-cities.enum';
 
 @Injectable()
 export class AdvertisingRepositoryImpl implements AdvertisingRepository {
@@ -104,19 +104,29 @@ export class AdvertisingRepositoryImpl implements AdvertisingRepository {
     try {
       const offset = params?.offset || 0;
       const limit = params?.limit || 10;
-      const conditions = [];
-
-      if (status) conditions.push(eq(ads.status, status));
-      if (userId) conditions.push(eq(ads.userId, userId));
-
-      const whereCondition =
-        conditions.length > 0 ? and(...conditions) : undefined;
-
-      const [{ count }] = await db
+  
+      // Build conditions array with proper typing
+      const conditions: SQL<unknown>[] = [];
+  
+      if (status) {
+        conditions.push(eq(ads.status, status));
+      }
+      if (userId) {
+        conditions.push(eq(ads.userId, userId));
+      }
+  
+      // Use and() only if there are conditions, otherwise undefined
+      const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
+  
+      // Count total records
+      const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(ads)
         .where(whereCondition);
-
+  
+      const count = countResult[0]?.count || 0;
+  
+      // Fetch paginated results
       const results = await db
         .select()
         .from(ads)
@@ -124,7 +134,7 @@ export class AdvertisingRepositoryImpl implements AdvertisingRepository {
         .orderBy(sql`${ads.createdAt} DESC`)
         .limit(limit)
         .offset(offset);
-
+  
       return {
         items: results.map((r) => this.mapper.toDomain(r)),
         total: Number(count),
@@ -134,7 +144,6 @@ export class AdvertisingRepositoryImpl implements AdvertisingRepository {
       return { items: [], total: 0 };
     }
   }
-
   // ✅ Find ads by title (user or admin search)
   async findAdsByTitle<T extends PaginatedQueryParams>(
     title: string,
@@ -181,13 +190,13 @@ export class AdvertisingRepositoryImpl implements AdvertisingRepository {
     try {
       const offset = params?.offset || 0;
       const limit = params?.limit || 10;
-
-      const conditions = [
+  
+      const conditions: SQL<unknown>[] = [
         eq(ads.status, AdStatus.APPROVED),
         eq(ads.active, true),
         gt(ads.impressionsCredit, 0),
       ];
-
+  
       if (targetCities?.length) {
         conditions.push(
           sql`${ads.targetCities} && ARRAY[${sql.join(
@@ -196,23 +205,26 @@ export class AdvertisingRepositoryImpl implements AdvertisingRepository {
           )}]::text[]`,
         );
       }
-
+  
       if (title) {
-        conditions.push(
-          or(
-            sql`LOWER(${ads.titleEn}) LIKE LOWER(${`%${title}%`})`,
-            sql`LOWER(${ads.titleAr}) LIKE LOWER(${`%${title}%`})`,
-          ),
+        const titleCondition = or(
+          sql`LOWER(${ads.titleEn}) LIKE LOWER(${`%${title}%`})`,
+          sql`LOWER(${ads.titleAr}) LIKE LOWER(${`%${title}%`})`,
         );
+        if (titleCondition) {
+          conditions.push(titleCondition);
+        }
       }
-
+  
       const whereCondition = and(...conditions);
-
-      const [{ count }] = await db
+  
+      const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(ads)
         .where(whereCondition);
-
+  
+      const count = countResult[0]?.count || 0;
+  
       const results = await db
         .select()
         .from(ads)
@@ -220,7 +232,7 @@ export class AdvertisingRepositoryImpl implements AdvertisingRepository {
         .orderBy(sql`${ads.createdAt} DESC`)
         .limit(limit)
         .offset(offset);
-
+  
       // ✅ Decrement impression credits after fetch
       if (results.length > 0) {
         const adIds = results.map((r) => r.id);
@@ -232,7 +244,7 @@ export class AdvertisingRepositoryImpl implements AdvertisingRepository {
           })
           .where(inArray(ads.id, adIds));
       }
-
+  
       return {
         items: results.map((r) => this.mapper.toDomain(r)),
         total: Number(count),

@@ -1,25 +1,25 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { ADVERTISING_REPOSITORY } from '../../../advertising.tokens';
-import { AdvertisingRepository } from '../../../domain/repository/advertising.repository.interface';
+import { Option } from 'effect/Option';
 import { AssignCreditCommand } from '../../command/assign-credit.command';
+import { AssignCreditUseCase } from '../../use-case/assign-credit.use-case';
+import { ASSIGN_CREDIT_USE_CASE } from '../../../advertising.tokens';
+import { Ad } from '../../../domain/entity/ad.entity';
 
-@CommandHandler('AssignCredit')
+@CommandHandler(AssignCreditCommand)
 export class AssignCreditHandler
   implements ICommandHandler<AssignCreditCommand>
 {
   constructor(
-    @Inject(ADVERTISING_REPOSITORY)
-    private readonly repo: AdvertisingRepository,
+    @Inject(ASSIGN_CREDIT_USE_CASE)
+    private readonly assignCreditUseCase: AssignCreditUseCase,
   ) {}
 
-  async execute(command: AssignCreditCommand) {
-    // command must contain userId, adId, credit, impressions
-    return this.repo.assignCreditToAdTransaction(
-      command.userId,
-      command.adId,
-      command.credit,
-      command.impressions,
-    );
+  async execute(command: AssignCreditCommand): Promise<Option<Ad>> {
+    return await this.assignCreditUseCase.execute({
+      userId: command.userId,
+      adId: command.adId,
+      credit: command.credit,
+    });
   }
 }

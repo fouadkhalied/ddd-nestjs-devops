@@ -15,16 +15,33 @@ import { AssignCreditUseCase } from './application/use-case/assign-credit.use-ca
 import { CreateAdHandler } from './application/handler/command/create-ad.handler';
 import { ApproveAdHandler } from './application/handler/command/approve-ad.handler';
 import { AssignCreditHandler } from './application/handler/command/assign-credit.handler';
+import { ActivateAdHandler } from './application/handler/command/activate-ad.handler';
+import { DeactivateAdHandler } from './application/handler/command/deactivate-ad.handler';
+import { RejectAdHandler } from './application/handler/command/reject-ad.handler';
+import { UpdateAdHandler } from './application/handler/command/update-ad.handler';
+import { DeleteAdHandler } from './application/handler/command/delete-ad.handler';
 import { GetAdByIdHandler } from './application/handler/query/get-ad-by-id.handler';
 import { GetAllAdsHandler } from './application/handler/query/get-all-ads.handler';
+import { GetAdsByTitleHandler } from './application/handler/query/get-ads-by-title.handler';
+import { GetApprovedAdsHandler } from "./application/handler/query/get-ads-for-feed.handler";
 
 const CommandHandlers = [
   CreateAdHandler,
   ApproveAdHandler,
   AssignCreditHandler,
+  ActivateAdHandler,
+  DeactivateAdHandler,
+  RejectAdHandler,
+  UpdateAdHandler,
+  DeleteAdHandler,
 ];
 
-const QueryHandlers = [GetAdByIdHandler, GetAllAdsHandler];
+const QueryHandlers = [
+  GetAdByIdHandler,
+  GetAllAdsHandler,
+  GetAdsByTitleHandler,
+  GetApprovedAdsHandler
+];
 
 @Module({
   imports: [CqrsModule],

@@ -1,20 +1,46 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Inject } from '@nestjs/common';
-import { ADVERTISING_REPOSITORY } from '../../../advertising.tokens';
-import { AdvertisingRepository } from '../../../domain/repository/advertising.repository.interface';
+import { CommandHandler, ICommandHandler, EventPublisher } from '@nestjs/cqrs';
+import { Inject, NotFoundException } from '@nestjs/common';
+import { Option, isNone } from 'effect/Option';
 import { ApproveAdCommand } from '../../command/approve-ad.command';
+import { AdvertisingRepository } from '../../../domain/repository/advertising.repository.interface';
+import { ADVERTISING_REPOSITORY, APPROVE_AD_USE_CASE } from '../../../advertising.tokens';
+import { Ad } from '../../../domain/entity/ad.entity';
 
-@CommandHandler('ApproveAd')
+@CommandHandler(ApproveAdCommand)
 export class ApproveAdHandler implements ICommandHandler<ApproveAdCommand> {
   constructor(
     @Inject(ADVERTISING_REPOSITORY)
-    private readonly repo: AdvertisingRepository,
+    private readonly advertisingRepository: AdvertisingRepository,
+    @Inject(APPROVE_AD_USE_CASE)
+    private readonly eventPublisher: EventPublisher,
   ) {}
 
-  async execute(command: ApproveAdCommand) {
-    // Expect command: { id, status }
-    return this.repo.updateAd(command.adId, command.socialMediaLinks, {
-      status: command.status,
-    });
+  async execute(command: ApproveAdCommand): Promise<Option<Ad>> {
+    const ad = await this.advertisingRepository.findAdById(command.adId);
+
+    if (isNone(ad)) {
+      throw new NotFoundException(`Ad with id ${command.adId} not found`);
+    }
+
+    // Merge event publisher context
+    this.eventPublisher.mergeObjectContext(ad.value);
+
+    // Call domain method
+    ad.value.approve(command.socialMediaLinks);
+
+    // Persist changes
+    const updated = await this.advertisingRepository.updateAd(
+      command.adId,
+      ad.value.props,
+    );
+
+    if (isNone(updated)) {
+      throw new NotFoundException('Failed to approve ad');
+    }
+
+    // Commit domain events
+    updated.value.commit();
+
+    return updated;
   }
 }

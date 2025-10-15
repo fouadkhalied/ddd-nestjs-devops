@@ -3,9 +3,7 @@ import { Ad } from '../../../domain/entity/ad.entity';
 import { AdStatus } from '../../../domain/value-object/ad-status.enum';
 import { BudgetType } from '../../../domain/value-object/budget-type.enum';
 import { KSACities } from '../../../domain/value-object/ksa-cities.enum';
-import { InsertAd } from 'src/libs/database/drizzle.schema';
 
-// This represents your Drizzle schema type
 export interface AdRecord {
   id: string;
   userId: string;
@@ -36,7 +34,7 @@ export interface AdRecord {
 
 @Injectable()
 export class AdMapper {
-  toDomain(record: AdRecord): InsertAd {
+  toDomain(record: AdRecord): Ad {
     return new Ad(record.id, {
       userId: record.userId,
       titleEn: record.titleEn,

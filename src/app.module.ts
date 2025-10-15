@@ -14,6 +14,8 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { CommunicationModule } from './modules/communication/communication.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { AdvertisingModule } from './modules/advertising/advertising.module'; 
+import { appConfig } from './libs/config/app.config';
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env'],
+      load: [appConfig],
     }),
     MikroOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -53,6 +56,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
     UserModule,
     AuthModule,
     CommunicationModule,
+    AdvertisingModule, // ✅ ADDED
   ],
   controllers: [],
   providers: [],

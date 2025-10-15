@@ -8,8 +8,8 @@ import {
   NotFoundException,
   Param,
   Post,
-  Put,
   Req,
+  Query,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FastifyRequest } from 'fastify';
@@ -25,19 +25,23 @@ import { AssignCreditBody } from '../presentation/body/assign-credit.body';
 import { CreateAdCommand } from '../../../application/command/create-ad.command';
 import { ApproveAdCommand } from '../../../application/command/approve-ad.command';
 import { AssignCreditCommand } from '../../../application/command/assign-credit.command';
+import { ActivateAdCommand } from '../../../application/command/activate-ad.command';
+import { DeactivateAdCommand } from '../../../application/command/deactivate-ad.command';
+import { RejectAdCommand } from '../../../application/command/reject-ad.command';
+import { DeleteAdCommand } from '../../../application/command/delete-ad.command';
 import { GetAdByIdQuery } from '../../../application/query/get-ad-by-id.query';
 import { GetAllAdsQuery } from '../../../application/query/get-all-ads.query';
+import { GetApprovedAdsQuery } from "../../../application/query/get-ads-for-feed.query";
 import { AdDto, toAdDto } from '../presentation/dto/ad.dto';
 import { AdParams } from '../presentation/params/ad.params';
-import { QueryParams } from '../../../../../libs/decorator/query-params.decorator';
-import { QueryParamsValidationPipe } from '../../../../../libs/pipe/query-params-validation.pipe';
 import {
   PaginatedResponse,
   toPaginatedResponse,
 } from '../../../../../libs/api/rest/paginated.response.dto';
 import { Collection } from '../../../../../libs/api/rest/collection.interface';
 import { Ad } from '../../../domain/entity/ad.entity';
-import { AdStatus } from '../../../domain/value-object/ad-status.enum';
+import { AdFilterParams } from '../presentation/params/ad-filter.params';
+import { allKsaCities, KSACities } from 'src/modules/advertising/domain/value-object/ksa-cities.enum';
 
 interface AuthRequest extends FastifyRequest {
   user?: {
@@ -47,7 +51,7 @@ interface AuthRequest extends FastifyRequest {
   };
 }
 
-@Controller('ads')
+@Controller('advertising')
 export class AdvertisingController {
   constructor(
     private readonly commandBus: CommandBus,
@@ -98,25 +102,67 @@ export class AdvertisingController {
   @AuthRoles(ApiRole.USER, ApiRole.ADMIN)
   @Get()
   async getAds(
-    @QueryParams(new QueryParamsValidationPipe()) params: AdParams,
+    @Query() params: AdParams,
     @Req() req: AuthRequest,
   ): Promise<PaginatedResponse<AdDto>> {
     const userId = req.user?.role === ApiRole.USER ? req.user.id : undefined;
-    const status = params.filter?.status;
+    const status = params.status;
 
     const ads: Collection<Ad> = await this.queryBus.execute(
-      new GetAllAdsQuery(params, status, userId),
+      new GetAllAdsQuery(
+        {
+          offset: params.offset ?? 0,
+          limit: params.limit ?? 10,
+        },
+        status,
+        userId,
+      ),
     );
-
     return toPaginatedResponse(
       {
         items: ads.items.map(toAdDto),
         total: ads.total,
       },
-      params.offset,
-      params.limit,
+      params.offset ?? 0,
+      params.limit ?? 10,
     );
   }
+
+@Get('/listApprovedAdsForUser')
+@PublicApi()
+async getAdsForFeed(
+  @Query() params: AdFilterParams,
+): Promise<PaginatedResponse<any>> {
+
+  const validCities: KSACities[] = [];
+
+if (params.targetCities) {
+  const cities = Array.isArray(params.targetCities)
+    ? params.targetCities
+    : [params.targetCities];
+
+  for (const city of cities) {
+    if (!allKsaCities.includes(city as KSACities)) {
+      throw new Error(`❌ Invalid city: ${city}. Must be one of ${allKsaCities.join(', ')}`);
+    }
+    validCities.push(city as KSACities);
+  }
+}
+
+  const ads: Collection<Ad> = await this.queryBus.execute(
+    new GetApprovedAdsQuery(params, validCities, params.titleEn),
+  );
+
+  return toPaginatedResponse(
+    {
+      items: ads.items.map(toAdDto),
+      total: ads.total,
+    },
+    1,
+    10,
+  );
+}
+
 
   @HttpCode(HttpStatus.OK)
   @AuthRoles(ApiRole.ADMIN)
@@ -135,8 +181,58 @@ export class AdvertisingController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @AuthRoles(ApiRole.ADMIN)
+  @Post(':id/activate')
+  async activateAd(@Param('id') id: string): Promise<AdDto> {
+    return getOrThrowWith(
+      map(
+        await this.commandBus.execute(new ActivateAdCommand(id)),
+        toAdDto,
+      ),
+      () => new NotFoundException(`Failed to activate ad with id ${id}`),
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
   @AuthRoles(ApiRole.USER, ApiRole.ADMIN)
-  @Post(':id/credit')
+  @Post(':id/deactivate')
+  async deactivateAd(
+    @Param('id') id: string,
+    @Req() req: AuthRequest,
+  ): Promise<AdDto> {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new NotFoundException('User not found');
+    }
+
+    return getOrThrowWith(
+      map(
+        await this.commandBus.execute(new DeactivateAdCommand(userId, id)),
+        toAdDto,
+      ),
+      () => new NotFoundException(`Failed to deactivate ad with id ${id}`),
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @AuthRoles(ApiRole.ADMIN)
+  @Post(':id/reject')
+  async rejectAd(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+  ): Promise<AdDto> {
+    return getOrThrowWith(
+      map(
+        await this.commandBus.execute(new RejectAdCommand(id, body.reason)),
+        toAdDto,
+      ),
+      () => new NotFoundException(`Failed to reject ad with id ${id}`),
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @AuthRoles(ApiRole.USER, ApiRole.ADMIN)
+  @Post(':id/assign-credit')
   async assignCredit(
     @Param('id') id: string,
     @Body() body: AssignCreditBody,
@@ -158,4 +254,12 @@ export class AdvertisingController {
         new NotFoundException(`Failed to assign credit to ad with id ${id}`),
     );
   }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @AuthRoles(ApiRole.USER, ApiRole.ADMIN)
+  @Delete(':id')
+  async deleteAd(@Param('id') id: string): Promise<void> {
+    await this.commandBus.execute(new DeleteAdCommand(id));
+  }
+  
 }

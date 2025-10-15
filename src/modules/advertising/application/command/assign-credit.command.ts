@@ -5,6 +5,5 @@ export class AssignCreditCommand implements ICommand {
     public readonly userId: string,
     public readonly adId: string,
     public readonly credit: number,
-    public readonly impressions: number,
   ) {}
 }
