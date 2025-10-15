@@ -5,10 +5,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { join } from 'path';
-import {
-  BadRequestException,
-  ValidationPipe,
-} from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './libs/exceptions/exception.filter';
 
 async function bootstrap() {
