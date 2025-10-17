@@ -1,30 +1,45 @@
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UseCase } from '../../../../libs/ddd/use-case.interface';
 import { LoginBody } from '../../api/rest/presentation/body/login.body';
-import { fromNullable, isNone, none, Option } from 'effect/Option';
-import { QueryBus } from '@nestjs/cqrs';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserState } from '../../../user/domain/value-object/user-state.enum';
-import { compare } from 'bcryptjs';
+import { fromNullable, none, Option } from 'effect/Option';
 import { AuthUser } from '../../api/rest/presentation/dto/auth-user.dto';
-import { GetAuthUserByEmailQuery } from '../query/get-auth-user-by-email.query';
-import { User } from '../../../user/domain/entity/user.entity';
+import { AUTH_REPOSITORY, PASSWORD_HASHER } from '../../auth.tokens';
+import { IPasswordHasher } from '../../domain/services/password-hasher.interface';
+import { IAuthRepository } from '../../domain/repositories/user.repository.interface';
 
 @Injectable()
 export class LoginUseCase implements UseCase<LoginBody, Option<AuthUser>> {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    @Inject(AUTH_REPOSITORY)
+    private readonly authRepository: IAuthRepository,
+    @Inject(PASSWORD_HASHER)
+    private readonly passwordHasher: IPasswordHasher,
+  ) {}
 
   async execute(body: LoginBody): Promise<Option<AuthUser>> {
-    const user: Option<User> = await this.queryBus.execute(
-      new GetAuthUserByEmailQuery(body.email),
-    );
-    if (isNone(user) || user.value.props.state !== UserState.ACTIVE)
+    const user = await this.authRepository.findByEmail(body.email);
+    
+    if (!user || !user.canLogin()) {
       return none();
-    const match = await compare(body.password, user.value.props.password);
-    if (!match) throw new UnauthorizedException('Invalid Credentials!');
+    }
+
+    if (!user.props.password) {
+      throw new UnauthorizedException('Invalid Credentials!');
+    }
+
+    const match = await this.passwordHasher.compare(
+      body.password,
+      user.props.password,
+    );
+
+    if (!match) {
+      throw new UnauthorizedException('Invalid Credentials!');
+    }
+
     return fromNullable({
-      id: user.value.id,
-      email: user.value.props.email,
-      role: user.value.props.role,
+      id: user.id,
+      email: user.props.email,
+      role: user.props.role,
     });
   }
 }

@@ -1,18 +1,19 @@
-import { OAuthProvider } from 'src/libs/auth/oauth-provider.enum';
 import { User } from '../entities/user.entity';
+import { OAuthProvider } from '../../../../libs/auth/oauth-provider.enum';
+import { UserRole } from 'src/modules/user/domain/value-object/user-role.enum';
 
 export interface CreateUserDto {
   email: string;
   password?: string;
   username?: string;
   oauth?: OAuthProvider;
-  role?: string;
+  role?: UserRole;
   verified?: boolean;
   googleId?: string;
   facebookId?: string;
 }
 
-export interface IUserRepository {
+export interface IAuthRepository {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findByGoogleId(googleId: string): Promise<User | null>;
@@ -22,4 +23,5 @@ export interface IUserRepository {
   verifyUser(id: string): Promise<User>;
   linkGoogleAccount(userId: string, googleId: string): Promise<User>;
   linkFacebookAccount(userId: string, facebookId: string): Promise<User>;
+  isActiveUser(userId: string): Promise<boolean>;
 }

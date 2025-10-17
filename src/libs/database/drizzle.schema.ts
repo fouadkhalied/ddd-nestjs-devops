@@ -36,7 +36,7 @@ export const oauthEnum = pgEnum('oauth_provider', [
   'google',
   'facebook',
 ]);
-export const currencyEnum = pgEnum('currency_enum', ['usd', 'sar']);
+export const currencyEnum = pgEnum('currency_enum', ['sar']);
 export const middleEastCountries = pgEnum('middleEastCountries', [
   'Bahrain',
   'Egypt',
