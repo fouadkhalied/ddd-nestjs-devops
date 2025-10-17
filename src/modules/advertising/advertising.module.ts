@@ -43,6 +43,7 @@ const QueryHandlers = [
   GetApprovedAdsHandler,
 ];
 
+
 @Module({
   imports: [CqrsModule],
   controllers: [AdvertisingController],
@@ -69,4 +70,5 @@ const QueryHandlers = [
   ],
   exports: [ADVERTISING_REPOSITORY],
 })
+
 export class AdvertisingModule {}

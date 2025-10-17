@@ -16,6 +16,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { AdvertisingModule } from './modules/advertising/advertising.module';
 import { appConfig } from './libs/config/app.config';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -56,7 +57,8 @@ import { appConfig } from './libs/config/app.config';
     UserModule,
     AuthModule,
     CommunicationModule,
-    AdvertisingModule, // ✅ ADDED
+    AdvertisingModule,
+    PaymentModule
   ],
   controllers: [],
   providers: [],
