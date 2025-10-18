@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/cache-manager';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MikroOrmModule } from '@mikro-orm/nestjs';
-import mikroOrmConfig from './config/database/mikro-orm.config';
+import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -11,8 +9,6 @@ import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CqrsModule } from '@nestjs/cqrs';
 import { CommunicationModule } from './modules/communication/communication.module';
-import { GraphQLModule } from '@nestjs/graphql';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { AdvertisingModule } from './modules/advertising/advertising.module';
 import { appConfig } from './libs/config/app.config';
 import { PaymentModule } from './modules/payment/payment.module';
@@ -28,20 +24,6 @@ import { PaymentModule } from './modules/payment/payment.module';
       isGlobal: true,
       envFilePath: ['.env'],
       load: [appConfig],
-    }),
-    MikroOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: () => {
-        return {
-          ...mikroOrmConfig,
-          allowGlobalContext: true,
-        };
-      },
-    }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: true,
     }),
     ThrottlerModule.forRoot([
       {

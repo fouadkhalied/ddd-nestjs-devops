@@ -5,6 +5,7 @@ import { AuthUser } from '../../api/rest/presentation/dto/auth-user.dto';
 import { AUTH_REPOSITORY } from '../../auth.tokens';
 import { UserRole } from '../../../user/domain/value-object/user-role.enum';
 import { IAuthRepository } from '../../domain/repositories/user.repository.interface';
+import { OAuthProvider } from 'src/libs/auth/oauth-provider.enum';
 
 export interface FacebookProfile {
   id: string;
@@ -35,7 +36,7 @@ export class FacebookLoginUseCase implements UseCase<FacebookProfile, Option<Aut
           email: profile.email,
           username: profile.name,
           facebookId: profile.id,
-          oauth: 'facebook',
+          oauth: OAuthProvider.FACEBOOK,
           verified: true,
           role: UserRole.USER,
         });

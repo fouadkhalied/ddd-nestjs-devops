@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../libs/ddd/use-case.interface';
 import { AUTH_REPOSITORY } from '../../auth.tokens';
 import { IAuthRepository } from '../../domain/repositories/user.repository.interface';

@@ -38,7 +38,7 @@ export class GoogleLoginUseCase implements UseCase<GoogleProfile, Option<AuthUse
           googleId: profile.id,
           oauth: OAuthProvider.NORMAL,
           verified: true,
-          role: UserRole.USER.toString(),
+          role: UserRole.USER,
         });
       }
     }
