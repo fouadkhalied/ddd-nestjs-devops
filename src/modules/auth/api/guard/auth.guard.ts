@@ -9,7 +9,6 @@ import { Reflector } from '@nestjs/core';
 import { JWT_AUTH_SERVICE } from '../../auth.tokens';
 import { isNone, none, Option, some } from 'effect/Option';
 import { QueryBus } from '@nestjs/cqrs';
-import { CheckAuthUserByIdQuery } from '../../application/query/check-auth-user-by-id.query';
 import {
   AUTH_ROLES_KEY,
   IS_PUBLIC_API,
@@ -17,6 +16,7 @@ import {
 import { ApiRole } from '../../../../libs/api/api-role.enum';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtAuthService } from '../../application/service/jwt-auth-service.interface';
+import { CheckAuthUserByIdQuery } from '../../application/command/query/check-auth-user-by-id.query';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -53,7 +53,8 @@ export class AuthGuard implements CanActivate {
       if (isNone(authUser)) return false;
       request['user'] = authUser.value;
       const isActiveUser = await this.isActiveUser(authUser.value.id);
-      return isActiveUser && apiRoles.includes(authUser.value.role);
+      const userRole = this.toApiRole(authUser.value.role);
+      return isActiveUser && userRole !== null && apiRoles.includes(userRole);
     } catch {
       return false;
     }
@@ -73,6 +74,15 @@ export class AuthGuard implements CanActivate {
     }
     return none();
   }
+
+  private toApiRole(role: string): ApiRole | null {
+    switch (role) {
+      case 'admin': return ApiRole.ADMIN;
+      case 'user': return ApiRole.USER;
+      default: return null;
+    }
+  }
+  
 
   private async isActiveUser(userId: string): Promise<boolean> {
     return await this.queryBus.execute(new CheckAuthUserByIdQuery(userId));

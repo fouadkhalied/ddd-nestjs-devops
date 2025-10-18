@@ -1,10 +1,10 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetAuthUserByEmailQuery } from './get-auth-user-by-email.query';
 import { User } from '../../domain/entities/user.entity';
 import { AUTH_REPOSITORY } from '../../auth.tokens';
 import { none, Option, some } from 'effect/Option';
 import { IAuthRepository } from '../../domain/repositories/user.repository.interface';
+import { GetAuthUserByEmailQuery } from '../command/query/get-auth-user-by-email.query';
 
 @QueryHandler(GetAuthUserByEmailQuery)
 export class GetAuthUserByEmailHandler implements IQueryHandler<GetAuthUserByEmailQuery> {

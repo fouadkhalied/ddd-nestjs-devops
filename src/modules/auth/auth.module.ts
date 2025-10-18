@@ -5,7 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 
 // Controllers
 import { AuthController } from './api/rest/controller/auth.controller';
-import { OAuthController } from './api/rest/controller/oauth.controller';
 
 // Guards
 import { AuthGuard } from './api/guard/auth.guard';
@@ -15,9 +14,11 @@ import { JwtService } from './infrastructure/jwt/jwt.service';
 import { BcryptPasswordHasher } from './infrastructure/password/bcrypt-password-hasher.service';
 import { GoogleOAuthService } from './infrastructure/oauth/google-oauth.service';
 import { FacebookOAuthService } from './infrastructure/oauth/facebook-oauth.service';
+import { OtpService } from './infrastructure/otp/otp.service';              
 
 // Repositories
-import { DrizzleAuthRepository } from './infrastructure/repositories/drizzle-auth.repository';
+import { AuthRepository } from './infrastructure/repository/auth.repository';
+import { OtpRepository } from './infrastructure/repository/otp.repository';  
 
 // Use Cases
 import { LoginUseCase } from './application/use-case/login.use-case';
@@ -30,18 +31,15 @@ import { ResendOtpUseCase } from './application/use-case/resend-otp.use-case';
 import { ForgotPasswordUseCase } from './application/use-case/forgot-password.use-case';
 import { ResetPasswordUseCase } from './application/use-case/reset-password.use-case';
 
-// Command Handlers
-import { RegisterUserHandler } from './application/command/register-user.handler';
-
-// Query Handlers
-import { CheckAuthUserByIdHandler } from './application/query/check-auth-user-by-id.handler';
-import { GetAuthUserByEmailHandler } from './application/query/get-auth-user-by-email.handler';
 
 // Tokens
 import {
   JWT_AUTH_SERVICE,
   PASSWORD_HASHER,
   AUTH_REPOSITORY,
+  OTP_REPOSITORY,     
+  OTP_SERVICE,        
+  EMAIL_SERVICE,      
   GOOGLE_OAUTH_SERVICE,
   FACEBOOK_OAUTH_SERVICE,
   LOGIN_USE_CASE,
@@ -54,13 +52,18 @@ import {
   FORGOT_PASSWORD_USE_CASE,
   RESET_PASSWORD_USE_CASE,
 } from './auth.tokens';
+import { RegisterUserHandler } from './application/command/handler/register-user.command';
+import { CheckAuthUserByIdHandler } from './application/query/check-auth-user-by-id.query';
+import { GetAuthUserByEmailHandler } from './application/query/get-auth-user-by-email.query';
+import { EmailService } from './infrastructure/email/email.service';
+import { OAuthController } from './api/rest/controller/oauth.controller';
 
 const CommandHandlers = [RegisterUserHandler];
 const QueryHandlers = [CheckAuthUserByIdHandler, GetAuthUserByEmailHandler];
 
 @Module({
   imports: [CqrsModule, ConfigModule],
-  controllers: [AuthController, OAuthController],
+  controllers: [AuthController, OAuthController],  
   providers: [
     // Global Guard
     {
@@ -78,8 +81,22 @@ const QueryHandlers = [CheckAuthUserByIdHandler, GetAuthUserByEmailHandler];
     },
     {
       provide: AUTH_REPOSITORY,
-      useClass: DrizzleAuthRepository,
+      useClass: AuthRepository,
     },
+    // ADD THESE THREE PROVIDERS:
+    {
+      provide: OTP_REPOSITORY,
+      useClass: OtpRepository,
+    },
+    {
+      provide: OTP_SERVICE,
+      useClass: OtpService,
+    },
+    {
+      provide: EMAIL_SERVICE,
+      useClass: EmailService,
+    },
+    // END OF NEW PROVIDERS
     {
       provide: GOOGLE_OAUTH_SERVICE,
       useClass: GoogleOAuthService,

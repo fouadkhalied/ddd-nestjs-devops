@@ -62,7 +62,7 @@ export class AuthRepository implements IAuthRepository {
         facebookId: data.facebookId,
       })
       .returning();
-
+      
     return this.mapToEntity(newUser);
   }
 

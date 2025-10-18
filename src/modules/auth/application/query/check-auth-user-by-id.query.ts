@@ -2,6 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { AUTH_REPOSITORY } from '../../auth.tokens';
 import { IAuthRepository } from '../../domain/repositories/user.repository.interface';
+import { CheckAuthUserByIdQuery } from '../command/query/check-auth-user-by-id.query';
 
 @QueryHandler(CheckAuthUserByIdQuery)
 export class CheckAuthUserByIdHandler implements IQueryHandler<CheckAuthUserByIdQuery> {

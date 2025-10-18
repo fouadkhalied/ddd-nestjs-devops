@@ -7,7 +7,6 @@ import mikroOrmConfig from './config/database/mikro-orm.config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
-import { UserModule } from './modules/user/user.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CqrsModule } from '@nestjs/cqrs';
@@ -54,7 +53,6 @@ import { PaymentModule } from './modules/payment/payment.module';
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     HealthModule,
-    UserModule,
     AuthModule,
     CommunicationModule,
     AdvertisingModule,

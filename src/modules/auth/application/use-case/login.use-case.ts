@@ -6,6 +6,7 @@ import { AuthUser } from '../../api/rest/presentation/dto/auth-user.dto';
 import { AUTH_REPOSITORY, PASSWORD_HASHER } from '../../auth.tokens';
 import { IPasswordHasher } from '../../domain/services/password-hasher.interface';
 import { IAuthRepository } from '../../domain/repositories/user.repository.interface';
+import { ApiRole } from 'src/libs/api/api-role.enum';
 
 @Injectable()
 export class LoginUseCase implements UseCase<LoginBody, Option<AuthUser>> {

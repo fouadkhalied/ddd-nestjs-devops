@@ -24,6 +24,10 @@ import {
 import { UseCase } from '../../../../../libs/ddd/use-case.interface';
 import { AuthUser } from '../presentation/dto/auth-user.dto';
 import { RefreshTokenBody } from '../presentation/body/refresh-token.body';
+import { ResendOtpBody } from '../presentation/body/resend-otp.body';
+import { ForgotPasswordBody } from '../presentation/body/forgot-password.body';
+import { ResetPasswordBody } from '../presentation/body/reset-password.body';
+import { VerifyEmailBody } from '../presentation/body/verify-email.body';
 
 @Controller('auth')
 export class AuthController {

@@ -4,10 +4,10 @@ import { none, Option, some } from 'effect/Option';
 import { CommandBus } from '@nestjs/cqrs';
 import { AuthUser } from '../../api/rest/presentation/dto/auth-user.dto';
 import { SignupBody } from '../../api/rest/presentation/body/signup.body';
-import { RegisterUserCommand } from '../command/register-user.command';
 import { CustomConflictException } from '../../../../libs/exceptions/custom-conflict.exception';
 import { AUTH_REPOSITORY } from '../../auth.tokens';
 import { IAuthRepository } from '../../domain/repositories/user.repository.interface';
+import { RegisterUserCommand } from '../command/query/register-user.command';
 
 @Injectable()
 export class SignupUseCase implements UseCase<SignupBody, Option<AuthUser>> {
