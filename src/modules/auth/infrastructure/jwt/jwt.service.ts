@@ -69,7 +69,9 @@ export class JwtService implements JwtAuthService {
     return this.generateJwtUser(this.convertToAuthUser(authUser.value));
   }
 
-  async verifyToken(token: string): Promise<Option<AuthUser>> {
+  async verifyToken(token: string): Promise<Option<AuthUser>> {   
+    console.log(this.verifyJwt<AuthUser>(token, this.tokenSecret));
+     
     return this.verifyJwt<AuthUser>(token, this.tokenSecret);
   }
 

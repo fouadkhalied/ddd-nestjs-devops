@@ -50,7 +50,7 @@ interface AuthRequest extends FastifyRequest {
   user?: {
     id: string;
     email: string;
-    role: number;
+    role: string;
   };
 }
 
@@ -106,9 +106,7 @@ export class AdvertisingController {
   @Get()
   async getAds(
     @Query() params: AdParams,
-    @Req() req: AuthRequest,
   ): Promise<PaginatedResponse<AdDto>> {
-    const userId = req.user?.role === ApiRole.USER ? req.user.id : undefined;
     const status = params.status;
 
     const ads: Collection<Ad> = await this.queryBus.execute(
@@ -117,8 +115,7 @@ export class AdvertisingController {
           offset: params.offset ?? 0,
           limit: params.limit ?? 10,
         },
-        status,
-        userId,
+        status
       ),
     );
     return toPaginatedResponse(

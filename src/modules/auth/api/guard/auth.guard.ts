@@ -50,10 +50,16 @@ export class AuthGuard implements CanActivate {
     if (isNone(token)) return false;
     try {
       const authUser = await this.jwtService.verifyToken(token.value);
-      if (isNone(authUser)) return false;
+      if (isNone(authUser)) { console.log('failed to verify token');
+       return false};
       request['user'] = authUser.value;
       const isActiveUser = await this.isActiveUser(authUser.value.id);
       const userRole = this.toApiRole(authUser.value.role);
+
+      console.log(isActiveUser);
+      console.log(userRole);
+      
+      
       return isActiveUser && userRole !== null && apiRoles.includes(userRole);
     } catch {
       return false;

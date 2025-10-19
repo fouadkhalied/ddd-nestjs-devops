@@ -63,7 +63,7 @@ import { PaymentDto } from '../presentation/dto/payment.dto';
   
     @HttpCode(HttpStatus.OK)
     @AuthRoles(ApiRole.USER, ApiRole.ADMIN)
-    @Post('create-session')
+    @Post('createSessionUrl')
     async createSession(
       @Body() body: CreateCheckoutSessionBody,
       @Req() req: AuthRequest,
