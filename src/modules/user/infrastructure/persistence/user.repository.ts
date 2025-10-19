@@ -3,18 +3,12 @@ import { eq, desc, sql, and, gte, lte, inArray } from 'drizzle-orm';
 import { db } from '../../../../libs/database/db.connection';
 import { 
   users, 
-  ads, 
-  impressionsEvents, 
-  clicksEvents, 
-  purchases,
-  adminImpressionRatio,
   socialMediaPages
 } from '../../../../libs/database/drizzle.schema';
 import { User } from '../../domain/entity/user.entity';
 import { UserRepository as IUserRepository } from '../../domain/repository/user.repository.interface';
 import { Collection } from '../../../../libs/api/rest/collection.interface';
 import { PaginatedQueryParams } from '../../../../libs/api/rest/paginated-query-params.dto';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -74,8 +68,8 @@ export class UserRepository implements IUserRepository {
   
     return new User(userData.id, {
       email: userData.email,
-      password: null,
-      firstName: userData.username,
+      password: "",
+      firstName: userData.username || "user",
       role: userData.role as any,
       state: 'ACTIVE' as any,
       createdAt: userData.createdAt,
@@ -122,8 +116,8 @@ export class UserRepository implements IUserRepository {
 
       const userEntities = results.map(user => new User(user.id, {
         email: user.email,
-        password: null,
-        firstName: user.username,
+        password: "",
+        firstName: user.username || "user",
         role: user.role as any,
         state: 'ACTIVE' as any,
         createdAt: user.createdAt,
@@ -145,9 +139,6 @@ export class UserRepository implements IUserRepository {
 
   async updateUser(id: string, updates: Partial<any>): Promise<User | null> {
     try {
-      if (updates.password) {
-        updates.password = await bcrypt.hash(updates.password, 12);
-      }
 
       const [user] = await db
         .update(users)
@@ -160,7 +151,7 @@ export class UserRepository implements IUserRepository {
       return new User(user.id, {
         email: user.email,
         password: user.password!,
-        firstName: user.username,
+        firstName: user.username || "user",
         role: user.role as any,
         state: 'ACTIVE' as any,
         createdAt: user.createdAt,
@@ -204,7 +195,7 @@ export class UserRepository implements IUserRepository {
       return new User(user.id, {
         email: user.email,
         password: user.password!,
-        firstName: user.username,
+        firstName: user.username || "user",
         role: user.role as any,
         state: 'ACTIVE' as any,
         createdAt: user.createdAt,
