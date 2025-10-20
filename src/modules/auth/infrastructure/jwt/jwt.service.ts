@@ -6,7 +6,7 @@ import {
   JWT_REFRESH_SECRET,
   JWT_SECRET,
 } from '../../../../config/env/configuration.constant';
-import { isNone, liftThrowable, Option } from 'effect/Option';
+import { isNone, Option, some, none } from 'effect/Option';
 import { JwtAuthService } from '../../application/service/jwt-auth-service.interface';
 import * as jwt from 'jsonwebtoken';
 import { getConfigValue } from '../../../../libs/util/config.util';
@@ -37,15 +37,31 @@ export class JwtService implements JwtAuthService {
   }
 
   async generateToken(user: AuthUser): Promise<string> {
-    return jwt.sign(user, this.tokenSecret, {
-      expiresIn: this.tokenExpiration,
-    });
+    return jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      this.tokenSecret,
+      {
+        expiresIn: this.tokenExpiration,
+      }
+    );
   }
 
   async generateRefreshToken(user: AuthUser): Promise<string> {
-    return jwt.sign(user, this.refreshTokenSecret, {
-      expiresIn: this.refreshTokenExpiration,
-    });
+    return jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      this.refreshTokenSecret,
+      {
+        expiresIn: this.refreshTokenExpiration,
+      }
+    );
   }
 
   async generateJwtUser(authUser: AuthUser): Promise<JwtUser> {
@@ -61,29 +77,48 @@ export class JwtService implements JwtAuthService {
   }
 
   async generateJwtUserFromRefresh(refreshToken: string): Promise<JwtUser> {
-    const authUser = this.verifyJwt<AuthUser>(
-      refreshToken,
-      this.refreshTokenSecret,
-    );
+    const authUser = await this.verifyRefreshToken(refreshToken);
     if (isNone(authUser)) throw new UnauthorizedException('Invalid Token!');
     return this.generateJwtUser(this.convertToAuthUser(authUser.value));
   }
 
-  async verifyToken(token: string): Promise<Option<AuthUser>> {   
-    console.log(this.verifyJwt<AuthUser>(token, this.tokenSecret));
-     
-    return this.verifyJwt<AuthUser>(token, this.tokenSecret);
+  async verifyToken(token: string): Promise<Option<AuthUser>> {
+    try {
+      const decoded = jwt.verify(token, this.tokenSecret) as any;
+      
+      console.log('🔍 Decoded token:', decoded);
+      
+      // Extract only the AuthUser fields
+      const authUser: AuthUser = {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+      };
+      
+      console.log('✅ Extracted AuthUser:', authUser);
+      
+      return some(authUser);
+    } catch (error: any) {
+      console.error('❌ Token verification failed:', error.message);
+      return none();
+    }
   }
 
   async verifyRefreshToken(refreshToken: string): Promise<Option<AuthUser>> {
-    return this.verifyJwt<AuthUser>(refreshToken, this.refreshTokenSecret);
-  }
-
-  /**
-   * Generic JWT verification method.
-   */
-  private verifyJwt<T>(token: string, secret: string): Option<T> {
-    return liftThrowable(() => jwt.verify(token, secret) as T)();
+    try {
+      const decoded = jwt.verify(refreshToken, this.refreshTokenSecret) as any;
+      
+      const authUser: AuthUser = {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+      };
+      
+      return some(authUser);
+    } catch (error: any) {
+      console.error('❌ Refresh token verification failed:', error.message);
+      return none();
+    }
   }
 
   /**

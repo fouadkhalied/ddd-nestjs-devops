@@ -22,6 +22,8 @@ export class CreateCheckoutSessionHandler
   ): Promise<CheckoutSessionResult> {
     try {
       // Get the appropriate payment gateway
+
+      
       const gateway = this.gatewayFactory.getGateway(command.method);
 
       // Create checkout session with gateway

@@ -72,22 +72,16 @@ import { PaymentDto } from '../presentation/dto/payment.dto';
       if (!userId) {
         throw new UnauthorizedException('User not authenticated');
       }
-  
-      if (!body.amount || body.amount <= 0) {
-        throw new BadRequestException('Valid amount is required');
-      }
-  
-      if (!body.currency) {
-        throw new BadRequestException('Currency is required');
-      }
-  
+
+      console.log(body);
+
       const session = await this.commandBus.execute(
         new CreateCheckoutSessionCommand(
             userId,
             'user@email.com',
             body.amount,
             body.currency,
-            PaymentMethod.PAYMOB
+            body.method
         )
       );
   

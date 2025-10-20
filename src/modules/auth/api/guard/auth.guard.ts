@@ -36,9 +36,11 @@ export class AuthGuard implements CanActivate {
     );
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_API, [
       context.getHandler(),
-      context.getClass(),
-    ]);
+      context.getClass()],
+    );
+    
     if (isPublic && !apiRoles) return true;
+    
     let request: FastifyRequest;
     if (context.getType().toString() === 'graphql') {
       const gqlContext = GqlExecutionContext.create(context);
@@ -46,22 +48,54 @@ export class AuthGuard implements CanActivate {
     } else {
       request = context.switchToHttp().getRequest<FastifyRequest>();
     }
+    
     const token = this.extractToken(request);
-    if (isNone(token)) return false;
+    if (isNone(token)) {
+      console.log('❌ No token found');
+      return false;
+    }
+    
     try {
       const authUser = await this.jwtService.verifyToken(token.value);
-      if (isNone(authUser)) { console.log('failed to verify token');
-       return false};
+      if (isNone(authUser)) {
+        console.log('❌ Failed to verify token');
+        return false;
+      }
+      
       request['user'] = authUser.value;
+      
       const isActiveUser = await this.isActiveUser(authUser.value.id);
+      if (!isActiveUser) {
+        console.log('❌ User is not active');
+        return false;
+      }
+      
+      // FIXED: Get the user role from the token
       const userRole = this.toApiRole(authUser.value.role);
-
-      console.log(isActiveUser);
-      console.log(userRole);
       
+      console.log('🔍 Debug Info:', {
+        userRole,
+        apiRoles,
+        roleFromToken: authUser.value.role,
+        hasRequiredRole: apiRoles ? apiRoles.includes(userRole!) : false
+      });
       
-      return isActiveUser && userRole !== null && apiRoles.includes(userRole);
-    } catch {
+      // If no specific roles required, just check if user is active
+      if (!apiRoles || apiRoles.length === 0) {
+        return isActiveUser;
+      }
+      
+      // Check if user has required role
+      if (userRole === null) {
+        console.log('❌ Invalid user role');
+        return false;
+      }
+      
+      const hasRole = apiRoles.includes(userRole);
+    
+      return hasRole;
+    } catch (error) {
+      console.error('❌ Auth guard error:', error);
       return false;
     }
   }
@@ -82,13 +116,18 @@ export class AuthGuard implements CanActivate {
   }
 
   private toApiRole(role: string): ApiRole | null {
-    switch (role) {
-      case 'admin': return ApiRole.ADMIN;
-      case 'user': return ApiRole.USER;
-      default: return null;
+    // Role comes from JWT as string ('admin' or 'user')
+    // But ApiRole enum uses numbers (0 for ADMIN, 1 for USER)
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return ApiRole.ADMIN; // 0
+      case 'user':
+        return ApiRole.USER; // 1
+      default:
+        console.log('❌ Unknown role:', role);
+        return null;
     }
   }
-  
 
   private async isActiveUser(userId: string): Promise<boolean> {
     return await this.queryBus.execute(new CheckAuthUserByIdQuery(userId));

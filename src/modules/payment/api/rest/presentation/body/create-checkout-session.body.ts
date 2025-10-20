@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, IsEnum, IsOptional, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsEnum, Min, IsPositive } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaymentMethod } from '../../../../domain/value-object/payment-method.enum';
 
@@ -7,6 +7,7 @@ export class CreateCheckoutSessionBody {
   @IsNotEmpty()
   @IsNumber()
   @Min(1)
+  @IsPositive()
   amount!: number;
 
   @ApiProperty({ example: 'SAR', description: 'Currency code' })
@@ -18,14 +19,4 @@ export class CreateCheckoutSessionBody {
   @IsNotEmpty()
   @IsEnum(PaymentMethod)
   method!: PaymentMethod;
-
-  @ApiProperty({ example: 'ad-uuid', required: false })
-  @IsOptional()
-  @IsString()
-  adId?: string;
-
-  @ApiProperty({ example: 1000, required: false })
-  @IsOptional()
-  @IsNumber()
-  impressions?: number;
 }

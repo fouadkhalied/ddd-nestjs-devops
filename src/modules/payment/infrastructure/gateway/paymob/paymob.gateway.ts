@@ -9,8 +9,16 @@ import { PaymobConfig } from './paymob.types';
 @Injectable()
 export class PaymobGateway implements IPaymentGateway {
   private webhookHandlers = new Map<string, (event: any) => Promise<void>>();
+  private readonly baseUrl = 'https://ksa.paymob.com/api';
 
-  constructor(private readonly config: PaymobConfig) {}
+  constructor(private readonly config: PaymobConfig) {
+    console.log('🔧 Paymob Gateway initialized:', {
+      hasApiKey: !!this.config.apiKey,
+      hasIntegrationId: !!this.config.integrationId,
+      hasIframeId: !!this.config.iframeId,
+      baseUrl: this.baseUrl,
+    });
+  }
 
   async createCheckoutSession(params: {
     amount: number;
@@ -19,11 +27,15 @@ export class PaymobGateway implements IPaymentGateway {
     metadata: Record<string, any>;
   }): Promise<CheckoutSessionResult> {
     try {
+      console.log('📝 Creating Paymob session:', params);
+
       // Step 1: Authenticate
       const authToken = await this.authenticate();
+      console.log('✅ Authentication successful');
 
       // Step 2: Create order
-      const orderId = await this.createOrder(authToken, params.amount);
+      const orderId = await this.createOrder(authToken, params.amount, params.currency);
+      console.log('✅ Order created:', orderId);
 
       // Step 3: Generate payment key
       const paymentKey = await this.generatePaymentKey(
@@ -34,48 +46,95 @@ export class PaymobGateway implements IPaymentGateway {
         params.customerEmail,
         params.metadata,
       );
+      console.log('✅ Payment key generated');
 
       // Step 4: Return iframe URL
-      const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${this.config.iframeId}?payment_token=${paymentKey}`;
+      const iframeUrl = `https://ksa.paymob.com/api/acceptance/iframes/${this.config.iframeId}?payment_token=${paymentKey}`;
 
       return {
         url: iframeUrl,
         id: orderId.toString(),
       };
-    } catch (error) {
-      console.error('❌ Paymob checkout session error:', error);
-      throw new Error('Failed to create Paymob checkout session');
+    } catch (error: any) {
+      console.error('❌ Paymob checkout session error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw new Error(`Paymob Error: ${error.message}`);
     }
   }
 
   private async authenticate(): Promise<string> {
-    const response = await fetch('https://accept.paymob.com/api/auth/tokens', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: this.config.apiKey }),
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          api_key: this.config.apiKey 
+        }),
+      });
 
-    const data = await response.json();
-    return data.token;
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Auth error:', errorData);
+        throw new Error(`Authentication failed: ${JSON.stringify(errorData)}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.token) {
+        throw new Error('No token received from Paymob');
+      }
+
+      return data.token;
+    } catch (error: any) {
+      console.error('❌ Authentication error:', error);
+      throw error;
+    }
   }
 
-  private async createOrder(authToken: string, amount: number): Promise<number> {
-    const response = await fetch('https://accept.paymob.com/api/ecommerce/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+  private async createOrder(
+    authToken: string, 
+    amount: number, 
+    currency: string
+  ): Promise<number> {
+    try {
+      const amountCents = Math.round(amount * 100);
+
+      const payload = {
         auth_token: authToken,
         delivery_needed: false,
-        amount_cents: amount * 100,
-        currency: 'SAR',
+        amount_cents: amountCents,
+        currency: currency,
         items: [],
-      }),
-    });
+      };
 
-    const data = await response.json();
-    return data.id;
+      console.log('📦 Creating order with payload:', payload);
+
+      const response = await fetch(`${this.baseUrl}/ecommerce/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Order creation error:', errorData);
+        throw new Error(`Order creation failed: ${JSON.stringify(errorData)}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.id) {
+        throw new Error('No order ID received from Paymob');
+      }
+
+      return data.id;
+    } catch (error: any) {
+      console.error('❌ Order creation error:', error);
+      throw error;
+    }
   }
 
   private async generatePaymentKey(
@@ -86,38 +145,71 @@ export class PaymobGateway implements IPaymentGateway {
     email: string,
     metadata: Record<string, any>,
   ): Promise<string> {
-    const response = await fetch('https://accept.paymob.com/api/acceptance/payment_keys', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const amountCents = Math.round(amount * 100);
+
+      const payload = {
         auth_token: authToken,
-        amount_cents: amount * 100,
+        amount_cents: amountCents,
         expiration: 3600,
         order_id: orderId,
         billing_data: {
-          email,
-          first_name: 'NA',
-          last_name: 'NA',
-          phone_number: 'NA',
+          email: email,
+          first_name: metadata.firstName || 'Customer',
+          last_name: metadata.lastName || 'User',
+          phone_number: metadata.phone || '+966500000000',
           apartment: 'NA',
           floor: 'NA',
           street: 'NA',
           building: 'NA',
           shipping_method: 'NA',
           postal_code: 'NA',
-          city: 'NA',
-          country: 'NA',
-          state: 'NA',
+          city: 'Riyadh',
+          country: 'SA',
+          state: 'Riyadh',
         },
-        currency,
-        integration_id: this.config.integrationId,
+        currency: currency,
+        integration_id: parseInt(this.config.integrationId),
         lock_order_when_paid: true,
-        metadata
-      }),
-    });
+      };
 
-    const data = await response.json();
-    return data.token;
+      console.log('🔑 Generating payment key with payload:', {
+        ...payload,
+        auth_token: '***',
+      });
+
+      const response = await fetch(`${this.baseUrl}/acceptance/payment_keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = errorText;
+        }
+        console.error('❌ Payment key error:', {
+          status: response.status,
+          data: errorData,
+        });
+        throw new Error(`Payment key generation failed: ${JSON.stringify(errorData)}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.token) {
+        throw new Error('No payment token received from Paymob');
+      }
+
+      return data.token;
+    } catch (error: any) {
+      console.error('❌ Payment key generation error:', error);
+      throw error;
+    }
   }
 
   async verifyPayment(orderId: string): Promise<VerifyPaymentResult> {
@@ -125,13 +217,21 @@ export class PaymobGateway implements IPaymentGateway {
       await this.authenticate();
       
       const response = await fetch(
-        `https://accept.paymob.com/api/ecommerce/orders/${orderId}`,
+        `${this.baseUrl}/ecommerce/orders/${orderId}`,
         {
           headers: {
             'Content-Type': 'application/json',
           },
         },
       );
+
+      if (!response.ok) {
+        console.error('❌ Payment verification failed:', response.status);
+        return {
+          success: false,
+          paymentStatus: 'unpaid',
+        };
+      }
 
       const data = await response.json();
       const isPaid = data.paid_amount_cents > 0;
@@ -154,8 +254,10 @@ export class PaymobGateway implements IPaymentGateway {
 
   async processWebhook(payload: any): Promise<void> {
     try {
-      // Validate HMAC signature
-     // this.validateHmac(payload);
+      console.log('📨 Processing Paymob webhook:', {
+        type: payload.type,
+        obj: payload.obj?.order?.id,
+      });
 
       // Determine event type based on payload
       const eventType = this.determineEventType(payload);
@@ -168,6 +270,8 @@ export class PaymobGateway implements IPaymentGateway {
           type: eventType,
           data: { object: payload },
         });
+      } else {
+        console.log('⚠️ No handler for event type:', eventType);
       }
     } catch (error) {
       console.error('❌ Paymob webhook processing error:', error);
@@ -175,20 +279,25 @@ export class PaymobGateway implements IPaymentGateway {
     }
   }
 
-  // private validateHmac(payload: any): void {
-  //   // Implement HMAC validation logic here
-  //   // This is specific to Paymob's webhook security
-  // }
-
   private determineEventType(payload: any): string {
-    // Check payload to determine event type
+    // Paymob webhook structure
+    if (payload.type === 'TRANSACTION') {
+      if (payload.obj?.success === true || payload.obj?.success === 'true') {
+        return 'checkout.session.completed';
+      }
+      return 'payment_intent.payment_failed';
+    }
+    
+    // Fallback for other structures
     if (payload.success === true || payload.success === 'true') {
       return 'checkout.session.completed';
     }
+    
     return 'payment_intent.payment_failed';
   }
 
   onWebhookEvent(eventType: string, handler: (event: any) => Promise<void>): void {
     this.webhookHandlers.set(eventType, handler);
+    console.log(`✅ Webhook handler registered for: ${eventType}`);
   }
 }
